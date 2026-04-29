@@ -1,0 +1,39 @@
+<div class="question-body">
+    <h2>@Question.Text</h2>
+
+    <div class="option-list">
+        @foreach (var option in Question.Options)
+        {
+            <label class="option-row">
+                <input type="radio"
+                       name="@groupName"
+                       checked="@(selectedOptionId == option.Id)"
+                       @onchange="() => SelectOptionAsync(option.Id)" />
+                <span>@option.Text</span>
+            </label>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public Question Question { get; set; } = default!;
+    [Parameter] public UserAnswer? Answer { get; set; }
+    [Parameter] public EventCallback<UserAnswer> OnChanged { get; set; }
+
+    private readonly string groupName = $"single-{Guid.NewGuid():N}";
+    private string? selectedOptionId;
+
+    protected override void OnParametersSet()
+    {
+        selectedOptionId = Answer?.SelectedOptionIds.FirstOrDefault();
+    }
+
+    private async Task SelectOptionAsync(string optionId)
+    {
+        selectedOptionId = optionId;
+        await OnChanged.InvokeAsync(new UserAnswer
+        {
+            SelectedOptionIds = [optionId]
+        });
+    }
+}

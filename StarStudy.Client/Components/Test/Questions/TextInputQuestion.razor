@@ -1,0 +1,29 @@
+<div class="question-body">
+    <h2>@Question.Text</h2>
+    <label>
+        Ваш ответ
+        <textarea class="form-control answer-area" value="@answer" @oninput="UpdateAnswerAsync"></textarea>
+    </label>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public Question Question { get; set; } = default!;
+    [Parameter] public UserAnswer? Answer { get; set; }
+    [Parameter] public EventCallback<UserAnswer> OnChanged { get; set; }
+
+    private string? answer;
+
+    protected override void OnParametersSet()
+    {
+        answer = Answer?.Text;
+    }
+
+    private async Task UpdateAnswerAsync(ChangeEventArgs args)
+    {
+        answer = args.Value?.ToString();
+        await OnChanged.InvokeAsync(new UserAnswer
+        {
+            Text = answer
+        });
+    }
+}

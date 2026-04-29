@@ -1,0 +1,18 @@
+<div class="test-panel finish-card">
+    <p class="eyebrow">Готово</p>
+    <h1>Тест завершён</h1>
+
+    @if (State.CurrentTest is not null)
+    {
+        <p class="muted">@State.CurrentTest.Title</p>
+    }
+
+    <p>Ответы сохранены на сервере. Клиент не хранит правильные ответы и не проверяет результат самостоятельно.</p>
+
+    <button class="btn btn-primary" @onclick="OnLogout">Выйти</button>
+</div>
+
+@code {
+    [Parameter] public StudentState State { get; set; } = new();
+    [Parameter] public EventCallback OnLogout { get; set; }
+}

@@ -1,0 +1,28 @@
+@if (Question is null)
+{
+    <p class="muted">Вопрос не загружен.</p>
+}
+else
+{
+    @switch (Question.Type)
+    {
+        case QuestionTypes.Text:
+            <TextInputQuestion Question="Question" Answer="Answer" OnChanged="OnChanged" />
+            break;
+        case QuestionTypes.SingleChoice:
+            <SingleChoiceQuestion Question="Question" Answer="Answer" OnChanged="OnChanged" />
+            break;
+        case QuestionTypes.MultiChoice:
+            <MultiChoiceQuestion Question="Question" Answer="Answer" OnChanged="OnChanged" />
+            break;
+        default:
+            <p class="error-text">Неизвестный тип вопроса: @Question.Type</p>
+            break;
+    }
+}
+
+@code {
+    [Parameter] public Question? Question { get; set; }
+    [Parameter] public UserAnswer? Answer { get; set; }
+    [Parameter] public EventCallback<UserAnswer> OnChanged { get; set; }
+}

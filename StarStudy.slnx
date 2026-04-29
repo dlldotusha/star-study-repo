@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/Элементы решения/">
+    <File Path="LICENSE.txt" />
+  </Folder>
+  <Project Path="StarStudy.Client/StarStudy.Client.csproj" />
+  <Project Path="StarStudy.Admin/StarStudy.Admin.csproj" />
+  <Project Path="StarStudy/StarStudy.csproj" />
+</Solution>

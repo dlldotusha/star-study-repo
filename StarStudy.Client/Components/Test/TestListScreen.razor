@@ -1,0 +1,42 @@
+<div class="test-panel wide-panel">
+    <div class="split-heading">
+        <div>
+            <p class="eyebrow">Доступные тесты</p>
+            <h1>Выберите тест</h1>
+            @if (!string.IsNullOrWhiteSpace(UserName))
+            {
+                <p class="muted">Вы вошли как @UserName.</p>
+            }
+        </div>
+        <button class="btn btn-outline-secondary" @onclick="OnLogout" disabled="@IsBusy">Выйти</button>
+    </div>
+
+    @if (Tests.Count == 0)
+    {
+        <p class="muted">Для этого пользователя пока нет доступных тестов.</p>
+    }
+    else
+    {
+        <div class="test-grid">
+            @foreach (var test in Tests)
+            {
+                <article class="test-card">
+                    <p class="eyebrow">@test.QuestionCount вопросов · @test.TimeLimitMinutes минут</p>
+                    <h2>@test.Title</h2>
+                    <p>@test.ShortDescription</p>
+                    <button class="btn btn-primary" @onclick="() => OnSelect.InvokeAsync(test)" disabled="@IsBusy">
+                        Открыть
+                    </button>
+                </article>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public IReadOnlyList<TestInfo> Tests { get; set; } = [];
+    [Parameter] public string? UserName { get; set; }
+    [Parameter] public bool IsBusy { get; set; }
+    [Parameter] public EventCallback<TestInfo> OnSelect { get; set; }
+    [Parameter] public EventCallback OnLogout { get; set; }
+}

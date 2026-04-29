@@ -1,0 +1,55 @@
+<div class="question-body">
+    <h2>@Question.Text</h2>
+
+    <div class="option-list">
+        @foreach (var option in Question.Options)
+        {
+            <label class="option-row">
+                <input type="checkbox"
+                       checked="@selectedOptionIds.Contains(option.Id)"
+                       @onchange="args => ToggleOptionAsync(option.Id, args)" />
+                <span>@option.Text</span>
+            </label>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public Question Question { get; set; } = default!;
+    [Parameter] public UserAnswer? Answer { get; set; }
+    [Parameter] public EventCallback<UserAnswer> OnChanged { get; set; }
+
+    private readonly HashSet<string> selectedOptionIds = new(StringComparer.Ordinal);
+
+    protected override void OnParametersSet()
+    {
+        selectedOptionIds.Clear();
+
+        if (Answer is null)
+        {
+            return;
+        }
+
+        foreach (var optionId in Answer.SelectedOptionIds)
+        {
+            selectedOptionIds.Add(optionId);
+        }
+    }
+
+    private async Task ToggleOptionAsync(string optionId, ChangeEventArgs args)
+    {
+        if (args.Value is true)
+        {
+            selectedOptionIds.Add(optionId);
+        }
+        else
+        {
+            selectedOptionIds.Remove(optionId);
+        }
+
+        await OnChanged.InvokeAsync(new UserAnswer
+        {
+            SelectedOptionIds = selectedOptionIds.ToList()
+        });
+    }
+}

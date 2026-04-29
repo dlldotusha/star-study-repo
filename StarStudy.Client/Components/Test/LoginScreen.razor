@@ -1,0 +1,37 @@
+<div class="test-panel login-card">
+    <p class="eyebrow">Star-Study</p>
+    <h1>Вход в тестирование</h1>
+    <p class="muted">Введите логин и пароль, чтобы увидеть доступные тесты.</p>
+
+    <form class="stack-form" @onsubmit="SubmitAsync" @onsubmit:preventDefault>
+        <label>
+            Логин
+            <input class="form-control" autocomplete="username" @bind="loginData.Login" />
+        </label>
+
+        <label>
+            Пароль
+            <input class="form-control" type="password" autocomplete="current-password" @bind="loginData.Password" />
+        </label>
+
+        @if (!string.IsNullOrWhiteSpace(Message))
+        {
+            <div class="alert alert-info py-2">@Message</div>
+        }
+
+        <button class="btn btn-primary" type="submit" disabled="@IsBusy">Войти</button>
+    </form>
+</div>
+
+@code {
+    [Parameter] public bool IsBusy { get; set; }
+    [Parameter] public string? Message { get; set; }
+    [Parameter] public EventCallback<LoginData> OnLogin { get; set; }
+
+    private readonly LoginData loginData = new();
+
+    private async Task SubmitAsync()
+    {
+        await OnLogin.InvokeAsync(loginData);
+    }
+}

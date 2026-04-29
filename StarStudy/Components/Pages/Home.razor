@@ -1,0 +1,24 @@
+@page "/"
+@inject NavigationManager Navigation
+
+<PageTitle>Star-Study</PageTitle>
+
+<div class="test-shell">
+    <div class="test-panel">
+        <p class="eyebrow">Star-Study</p>
+        <h1>Тестирование</h1>
+        <p class="muted">Откройте страницу прохождения тестов, чтобы войти и выбрать доступный тест.</p>
+
+        <a class="btn btn-primary" href="test">Перейти к тестам</a>
+    </div>
+</div>
+
+@code {
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            Navigation.NavigateTo("/test");
+        }
+    }
+}

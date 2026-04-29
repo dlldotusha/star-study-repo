@@ -1,0 +1,30 @@
+<div class="test-panel wide-panel">
+    @if (Test is null)
+    {
+        <p class="muted">Тест не выбран.</p>
+    }
+    else
+    {
+        <p class="eyebrow">Описание теста</p>
+        <h1>@Test.Title</h1>
+
+        <div class="metrics-row">
+            <span>@Test.QuestionCount вопросов</span>
+            <span>@Test.TimeLimitMinutes минут</span>
+        </div>
+
+        <MarkdownText Text="@Test.Description" />
+
+        <div class="actions-row">
+            <button class="btn btn-primary" @onclick="OnStart" disabled="@IsBusy">Начать</button>
+            <button class="btn btn-outline-secondary" @onclick="OnBack" disabled="@IsBusy">К списку</button>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public TestInfo? Test { get; set; }
+    [Parameter] public bool IsBusy { get; set; }
+    [Parameter] public EventCallback OnStart { get; set; }
+    [Parameter] public EventCallback OnBack { get; set; }
+}

@@ -1,0 +1,13 @@
+.navbar-brand {
+    letter-spacing: 0.01em;
+}
+
+.nav-link {
+    border-radius: var(--bs-border-radius);
+    padding-inline: 0.75rem;
+}
+
+.nav-link.active {
+    background: var(--bs-primary-bg-subtle);
+    color: var(--bs-primary) !important;
+}

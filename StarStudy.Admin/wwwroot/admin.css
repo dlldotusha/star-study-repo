@@ -1,0 +1,28 @@
+.admin-shell {
+    --bs-body-bg: #f8f9fa;
+}
+
+.admin-login-card {
+    max-width: 28rem;
+    margin: clamp(2rem, 9vh, 5rem) auto;
+}
+
+.admin-type-select {
+    width: min(100%, 16rem);
+}
+
+.admin-points-input {
+    width: 6rem;
+}
+
+.admin-comment-input {
+    max-width: 22rem;
+}
+
+.admin-shell .card {
+    border-color: var(--bs-border-color);
+}
+
+.admin-shell .table {
+    font-size: .94rem;
+}

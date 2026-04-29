@@ -1,0 +1,77 @@
+@using System.Net
+@using System.Text
+
+<div class="markdown-box">@((MarkupString)html)</div>
+
+@code {
+    [Parameter] public string Text { get; set; } = "";
+
+    private string html = "";
+
+    protected override void OnParametersSet()
+    {
+        html = RenderMarkdown(Text);
+    }
+
+    private static string RenderMarkdown(string text)
+    {
+        var builder = new StringBuilder();
+        var inList = false;
+
+        foreach (var rawLine in text.Replace("\r\n", "\n").Split('\n'))
+        {
+            var line = rawLine.Trim();
+
+            if (line.Length == 0)
+            {
+                CloseListIfNeeded(builder, ref inList);
+                continue;
+            }
+
+            if (line.StartsWith("## ", StringComparison.Ordinal))
+            {
+                CloseListIfNeeded(builder, ref inList);
+                builder.Append("<h3>").Append(Encode(line[3..])).Append("</h3>");
+            }
+            else if (line.StartsWith("# ", StringComparison.Ordinal))
+            {
+                CloseListIfNeeded(builder, ref inList);
+                builder.Append("<h2>").Append(Encode(line[2..])).Append("</h2>");
+            }
+            else if (line.StartsWith("- ", StringComparison.Ordinal))
+            {
+                if (!inList)
+                {
+                    builder.Append("<ul>");
+                    inList = true;
+                }
+
+                builder.Append("<li>").Append(Encode(line[2..])).Append("</li>");
+            }
+            else
+            {
+                CloseListIfNeeded(builder, ref inList);
+                builder.Append("<p>").Append(Encode(line)).Append("</p>");
+            }
+        }
+
+        CloseListIfNeeded(builder, ref inList);
+        return builder.ToString();
+    }
+
+    private static void CloseListIfNeeded(StringBuilder builder, ref bool inList)
+    {
+        if (!inList)
+        {
+            return;
+        }
+
+        builder.Append("</ul>");
+        inList = false;
+    }
+
+    private static string Encode(string value)
+    {
+        return WebUtility.HtmlEncode(value);
+    }
+}

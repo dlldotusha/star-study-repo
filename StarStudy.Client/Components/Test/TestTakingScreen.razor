@@ -1,0 +1,95 @@
+<div class="test-panel wide-panel taking-panel">
+    @if (State.CurrentTest is null || Question is null)
+    {
+        <p class="muted">Загружаем вопрос...</p>
+    }
+    else
+    {
+        <div class="split-heading">
+            <div>
+                <p class="eyebrow">@State.CurrentTest.Title</p>
+                <h1>Вопрос @Question.Number из @State.TotalQuestions</h1>
+            </div>
+            <button class="btn btn-outline-secondary" @onclick="OnFinish" disabled="@(IsBusy || !AllQuestionsAnswered)">Завершить тест</button>
+        </div>
+
+        <nav class="question-nav" aria-label="Навигация по вопросам">
+            @for (var number = 1; number <= State.TotalQuestions; number++)
+            {
+                var questionNumber = number;
+                var cssClass = GetQuestionButtonClass(questionNumber);
+
+                <button class="@cssClass" @onclick="() => OnOpenQuestion.InvokeAsync(questionNumber)" disabled="@IsBusy">
+                    @questionNumber
+                </button>
+            }
+        </nav>
+
+        <div class="question-card">
+            <QuestionRenderer @key="Question.Id" Question="Question" Answer="currentAnswer" OnChanged="RememberAnswer" />
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(Message))
+        {
+            <div class="alert alert-info py-2">@Message</div>
+        }
+
+        <button class="btn btn-primary" @onclick="SubmitAsync" disabled="@IsBusy">Отправить</button>
+
+        @if (!AllQuestionsAnswered)
+        {
+            <p class="muted">Завершить тест можно после отправки ответов на все вопросы.</p>
+        }
+    }
+</div>
+
+@code {
+    [Parameter] public StudentState State { get; set; } = new();
+    [Parameter] public Question? Question { get; set; }
+    [Parameter] public bool IsBusy { get; set; }
+    [Parameter] public string? Message { get; set; }
+    [Parameter] public EventCallback<int> OnOpenQuestion { get; set; }
+    [Parameter] public EventCallback<UserAnswer> OnSubmit { get; set; }
+    [Parameter] public EventCallback OnFinish { get; set; }
+
+    private string? lastQuestionId;
+    private UserAnswer currentAnswer = new();
+    private bool AllQuestionsAnswered => State.TotalQuestions > 0
+        && State.AnsweredQuestionNumbers.Count >= State.TotalQuestions;
+
+    protected override void OnParametersSet()
+    {
+        if (Question?.Id != lastQuestionId)
+        {
+            lastQuestionId = Question?.Id;
+            currentAnswer = Question?.SavedAnswer ?? new UserAnswer();
+        }
+    }
+
+    private void RememberAnswer(UserAnswer answer)
+    {
+        currentAnswer = answer;
+    }
+
+    private async Task SubmitAsync()
+    {
+        await OnSubmit.InvokeAsync(currentAnswer);
+    }
+
+    private string GetQuestionButtonClass(int number)
+    {
+        var classes = new List<string> { "question-pill" };
+
+        if (number == State.CurrentQuestionNumber)
+        {
+            classes.Add("active");
+        }
+
+        if (State.AnsweredQuestionNumbers.Contains(number))
+        {
+            classes.Add("answered");
+        }
+
+        return string.Join(" ", classes);
+    }
+}

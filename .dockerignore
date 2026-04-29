@@ -1,0 +1,11 @@
+**/bin/
+**/obj/
+**/.vs/
+artifacts/
+DataProtectionKeys/
+**/DataProtectionKeys/
+*.user
+*.log
+.env
+.git/
+.gitignore

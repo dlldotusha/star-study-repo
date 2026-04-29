@@ -1,0 +1,243 @@
+@page "/test"
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+@inject TestApiClient Api
+
+<PageTitle>Тесты</PageTitle>
+
+<section class="test-shell">
+    @if (isLoading)
+    {
+        <div class="test-panel">
+            <p class="muted">Загружаем состояние теста...</p>
+        </div>
+    }
+    else if (!string.IsNullOrWhiteSpace(errorMessage))
+    {
+        <div class="test-panel">
+            <h1>Что-то пошло не так</h1>
+            <p class="error-text">@errorMessage</p>
+            <button class="btn btn-primary" @onclick="RefreshFromServerAsync">Попробовать снова</button>
+        </div>
+    }
+    else
+    {
+        @switch (screen)
+        {
+            case TestScreenNames.Login:
+                <LoginScreen IsBusy="isBusy" Message="@statusMessage" OnLogin="HandleLoginAsync" />
+                break;
+            case TestScreenNames.Tests:
+                <TestListScreen Tests="tests" UserName="@state.UserName" IsBusy="isBusy" OnSelect="HandleSelectTestAsync" OnLogout="HandleLogoutAsync" />
+                break;
+            case TestScreenNames.Intro:
+                <TestIntroScreen Test="selectedTest" IsBusy="isBusy" OnStart="HandleStartTestAsync" OnBack="HandleBackToTestsAsync" />
+                break;
+            case TestScreenNames.Taking:
+                <TestTakingScreen State="state"
+                                  Question="currentQuestion"
+                                  IsBusy="isBusy"
+                                  Message="@statusMessage"
+                                  OnOpenQuestion="HandleOpenQuestionAsync"
+                                  OnSubmit="HandleSubmitAnswerAsync"
+                                  OnFinish="HandleFinishAsync" />
+                break;
+            case TestScreenNames.Finished:
+                <FinishedScreen State="state" OnLogout="HandleLogoutAsync" />
+                break;
+        }
+    }
+</section>
+
+@code {
+    private bool isLoading = true;
+    private bool isBusy;
+    private string screen = TestScreenNames.Login;
+    private string? errorMessage;
+    private string? statusMessage;
+    private StudentState state = new();
+    private IReadOnlyList<TestInfo> tests = [];
+    private TestInfo? selectedTest;
+    private Question? currentQuestion;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RefreshFromServerAsync();
+    }
+
+    private async Task RefreshFromServerAsync()
+    {
+        await RunSafelyAsync(async () =>
+        {
+            isLoading = true;
+            statusMessage = null;
+            state = await Api.GetStateAsync();
+            await ApplyStateAsync(state);
+        });
+
+        isLoading = false;
+    }
+
+    private async Task HandleLoginAsync(LoginData loginData)
+    {
+        await RunBusyAsync(async () =>
+        {
+            var result = await Api.LoginAsync(loginData);
+            statusMessage = result.Message;
+
+            if (result.Success)
+            {
+                state = await Api.GetStateAsync();
+                await ApplyStateAsync(state);
+            }
+        });
+    }
+
+    private async Task HandleSelectTestAsync(TestInfo test)
+    {
+        await RunBusyAsync(async () =>
+        {
+            state = await Api.OpenTestAsync(test.Id);
+            await ApplyStateAsync(state);
+        });
+    }
+
+    private async Task HandleBackToTestsAsync()
+    {
+        await RunBusyAsync(async () =>
+        {
+            tests = await Api.GetTestsAsync();
+            selectedTest = null;
+            currentQuestion = null;
+            screen = TestScreenNames.Tests;
+            statusMessage = null;
+        });
+    }
+
+    private async Task HandleStartTestAsync()
+    {
+        if (selectedTest is null)
+        {
+            return;
+        }
+
+        await RunBusyAsync(async () =>
+        {
+            state = await Api.StartTestAsync(selectedTest.Id);
+            await ApplyStateAsync(state);
+        });
+    }
+
+    private async Task HandleOpenQuestionAsync(int number)
+    {
+        if (state.TestId is null)
+        {
+            return;
+        }
+
+        await RunBusyAsync(async () =>
+        {
+            currentQuestion = await Api.GetQuestionAsync(state.TestId, number);
+            state.CurrentQuestionNumber = number;
+            statusMessage = null;
+        });
+    }
+
+    private async Task HandleSubmitAnswerAsync(UserAnswer answer)
+    {
+        if (state.TestId is null || currentQuestion is null)
+        {
+            return;
+        }
+
+        await RunBusyAsync(async () =>
+        {
+            var result = await Api.SubmitAnswerAsync(state.TestId, currentQuestion, answer);
+            statusMessage = result.Message;
+
+            if (result.Accepted)
+            {
+                state.AnsweredQuestionNumbers = result.AnsweredQuestionNumbers;
+            }
+        });
+    }
+
+    private async Task HandleFinishAsync()
+    {
+        if (state.TestId is null)
+        {
+            return;
+        }
+
+        await RunBusyAsync(async () =>
+        {
+            state = await Api.FinishTestAsync(state.TestId);
+            await ApplyStateAsync(state);
+
+            if (state.Screen != TestScreenNames.Finished)
+            {
+                statusMessage = "Сервер не завершил тест: сначала отправьте ответы на все вопросы.";
+            }
+        });
+    }
+
+    private async Task HandleLogoutAsync()
+    {
+        await Api.LogoutAsync();
+        state = new StudentState();
+        tests = [];
+        selectedTest = null;
+        currentQuestion = null;
+        statusMessage = null;
+        errorMessage = null;
+        screen = TestScreenNames.Login;
+    }
+
+    private async Task ApplyStateAsync(StudentState nextState)
+    {
+        state = nextState;
+        screen = state.Screen;
+        selectedTest = state.CurrentTest;
+        currentQuestion = null;
+
+        if (!state.IsLoggedIn)
+        {
+            screen = TestScreenNames.Login;
+            tests = [];
+            return;
+        }
+
+        if (screen == TestScreenNames.Tests)
+        {
+            tests = await Api.GetTestsAsync();
+        }
+
+        if (screen == TestScreenNames.Taking && state.TestId is not null)
+        {
+            currentQuestion = await Api.GetQuestionAsync(state.TestId, state.CurrentQuestionNumber);
+        }
+    }
+
+    private async Task RunBusyAsync(Func<Task> action)
+    {
+        await RunSafelyAsync(async () =>
+        {
+            isBusy = true;
+            await action();
+        });
+
+        isBusy = false;
+    }
+
+    private async Task RunSafelyAsync(Func<Task> action)
+    {
+        try
+        {
+            errorMessage = null;
+            await action();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+    }
+}
